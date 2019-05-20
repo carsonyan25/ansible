@@ -1,0 +1,4 @@
+pkg_dir: /data/package
+app_dir: /data/openfalcon
+app_pkg: open-falcon-v0.2.0.tar.gz
+

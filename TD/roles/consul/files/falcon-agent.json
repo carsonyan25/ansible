@@ -1,0 +1,22 @@
+{
+  "service": {
+    "name": "falcon-agent",
+    "tags": ["monitor","falcon-agent"],
+    "address": "",
+    "port": 1988,
+    "checks": [
+      {
+            "id": "falcon-agent-api",
+            "name": "falocn-agent on http 1988",
+            "http": "http://localhost:1988/health",
+            "tls_skip_verify": true,
+            "method": "POST",
+            "interval": "60s",
+            "timeout": "3s"
+      }
+    ]
+
+  }
+
+}
+

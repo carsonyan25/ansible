@@ -1,0 +1,20 @@
+---
+- hosts: all
+  tasks:
+
+  - name: stop openfalcon-agent
+    systemd: 
+      name: openfalcon-agent
+      state: stopped
+    tags: stop openfalcon-agent
+
+  - name: modify setting
+    shell: sed -i  s/10.100.11.191/monitor.tuandai800.cn/g     /data/openfalcon/agent/config/cfg.json
+    tags: modify setting
+
+  - name: start openfalcon-agent
+    systemd: 
+      name: openfalcon-agent
+      state: started
+    tags: start openfalcon-agent
+

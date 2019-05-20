@@ -1,0 +1,4 @@
+mysql_package: http://pkg.tuandai888.com/packages/mysql-5.7.18-linux-glibc2.5-x86_64.tar.gz
+mysql_dir: /data/mysql
+database_dir: /data/database
+mysql_src_dir: /data/mysql-5.7.18-linux-glibc2.5-x86_64

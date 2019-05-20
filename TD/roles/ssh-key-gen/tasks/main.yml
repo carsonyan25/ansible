@@ -1,0 +1,7 @@
+# this playbook use to generate new ssh key on centos server 
+#
+
+- name: generate new ssh key pair
+  script: ssh_key_gen.py True
+  tags: generate new ssh key pair
+

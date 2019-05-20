@@ -1,0 +1,10 @@
+---
+
+- hosts: all
+  tasks:
+  - import_role:
+      name: install-cockpit
+  - import_role:
+      name: install-salt-minion
+  - import_role:
+      name: openstack-common

@@ -1,0 +1,26 @@
+# this script use to install cockpit on servers
+#
+#
+#
+- name: install cockpit
+  yum:
+    name: cockpit
+    state: present
+  tags: install cockpit
+
+- name: start cockpit service
+  systemd:
+    name: cockpit.socket
+    state: started
+    enabled: yes
+  tags: start cockpit service
+
+#- name: check cockpit service
+#  uri:
+#    url: https://127.0.0.1:9090
+#    status_code: 200
+#    method: GET
+#    validate_certs: no
+#    timeout: 5
+#  tags: check cockpit service 
+

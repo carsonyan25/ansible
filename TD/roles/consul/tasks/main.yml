@@ -1,0 +1,111 @@
+- name: create consul working directory
+  file:
+    path: /data/consul
+    state: directory
+    mode: 0755
+  become: true
+  tags: ["deploy consul service","create directory"]
+
+- name: create consul data dir
+  file:
+    path: /data/consul/data
+    state: directory
+    mode: 0755
+  become: true
+  tags: ["deploy consul service","create directory"]
+
+- name: create consul logs dir
+  file:
+    path: /data/consul/logs
+    state: directory
+    mode: 0755
+  become: true
+  tags: ["deploy consul service","create directory"]
+
+- name: create consul configuration directory
+  file:
+    path: /etc/consul.d
+    state: directory
+    mode: 0755
+  become: true
+  tags: ["deploy consul service","create directory"]
+
+- name: download consul package
+  get_url:
+    url: http://pkg.tuandai888.com/packages/devops-tools/consul_1.2.2_linux_amd64.zip
+    dest: /data/consul/consul_1.2.2_linux_amd64.zip
+    mode: 0744
+  tags: ["deploy consul service","down consul package"]
+
+- name: install unzip tool
+  yum:
+   name: unzip
+   state: present
+  async: 60
+  poll: 5
+  tags: ["deploy consul service","install unzip package"]
+
+- name: unzip consul package
+  unarchive:
+    src: /data/consul/consul_1.2.2_linux_amd64.zip
+    dest: /data/consul
+    remote_src: yes
+  tags: ["deploy consul service","unzip consul package"]
+
+- name: copy env script to VM
+  copy: 
+    src: consul.sh
+    dest: /etc/profile.d/
+    force: yes
+    mode: u+x,g+x,o+x
+  tags: ["deploy consul service","copy necessaries files","copy env script to VM"]
+     
+- name: copy control script to VM
+  copy: 
+    src: control_consul.sh
+    dest: /data/consul/
+    force: yes
+    mode: u+x,g+x,o+x
+  tags: ["deploy consul service","copy necessaries files","copy control script to VM"]
+
+- name: copy falcon-agent.json to VM
+  copy: 
+    src: falcon-agent.json
+    dest: /etc/consul.d/
+    force: yes
+    mode: 0644
+  tags: ["deploy consul service","copy necessaries files","copy falcon-agent.json to VM"]
+
+- name: copy init-client.json to VM
+  copy: 
+    src: init-client.json
+    dest: /etc/consul.d/
+    force: yes
+    mode: 0644
+  tags: ["deploy consul service","copy necessaries files","copy init-client.json to VM"]
+
+- name: copy consul.service to VM
+  copy: 
+    src: consul.service
+    dest: /etc/systemd/system/
+    force: yes
+    mode: 0644
+  tags: ["deploy consul service","copy necessaries files","copy consul.service to VM"]
+
+- name: set node name in init-client.json
+  shell: cur_nodename=`hostname -s` &&  sed -i s/NODENAME/${cur_nodename}/g  /etc/consul.d/init-client.json
+  tags: ["deploy consul service","setting consul"]
+
+- name: set ip address in control_consul.sh
+  shell: cur_ip=`curl http://169.254.169.254/latest/meta-data/local-ipv4` && sed -i s/CLIENT-ADDRESS/${cur_ip}/g  /etc/consul.d/init-client.json
+  tags: ["deploy consul service","setting consul"]
+     
+- name: enable and start consul service
+  systemd:
+    name: consul.service
+    state: started
+    enabled: yes 
+  tags: ["deploy consul service","enable and start consul service"]
+  
+
+   

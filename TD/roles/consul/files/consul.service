@@ -1,0 +1,16 @@
+#this script use to create consul service managed by systemd
+
+[Unit]
+Description=consul-service
+
+[Service]
+Type=forking
+ExecStart=/data/consul/control_consul.sh start
+ExecStop=/data/consul/control_consul.sh stop
+ExecReload=/data/consul/control_consul.sh reload
+Restart=always
+RestartSec=20
+
+[Install]
+WantedBy=multi-user.target
+

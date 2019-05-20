@@ -1,0 +1,12 @@
+{
+  "datacenter": "tuandai-test",
+  "data_dir": "/data/consul/data",
+  "log_level": "INFO",
+  "node_name": "NODENAME",
+  "bind_addr": "CLIENT-ADDRESS",
+  "addresses": {
+    "http": "0.0.0.0"
+  }
+
+}
+

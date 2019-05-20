@@ -1,0 +1,117 @@
+#this playbook used to install specified docker package
+#
+- name: remove existing docker
+  yum:
+    name: docker
+    state: absent
+  tags: remove existing docker packages
+
+- name: remove existing docker-common
+  yum:
+    name: docker-common
+    state: absent
+  tags: remove existing docker packages
+
+- name: remove existing docker-selinux
+  yum:
+    name: docker-selinux
+    state: absent
+  tags: remove existing docker packages
+
+- name: remove existing docker-engine
+  yum:
+    name: docker-engine
+    state: absent
+  tags: remove existing docker packages
+
+- name: remove existing docker-client
+  yum:
+    name: docker-client
+    state: absent
+  tags: remove existing docker packages
+
+- name: install yum-utils
+  yum:
+    name: yum-utils
+    state: present
+  tags: install dependencies packages
+
+- name: install device-mapper-persistent-data
+  yum:
+    name: device-mapper-persistent-data
+    state: present
+  tags: install dependencies packages
+
+- name: install lvm2
+  yum:
+    name: lvm2
+    state: present
+  tags: install dependencies packages
+
+- name: ADD Docker CE Stable repo
+  yum_repository:
+    name: Docker-CE-Stable 
+    description: Docker CE Stable - $basearch
+    baseurl: https://mirrors.tuna.tsinghua.edu.cn/docker-ce/linux/centos/7/$basearch/stable
+    enabled: yes
+    gpgcheck: no
+    file: docker-ce-tsinghua 
+  tags: ADD Docker CE Tsinghua repos
+
+- name: ADD Docker CE Edge repo
+  yum_repository:
+    name: Docker-CE-Edge
+    description: Docker CE Edge - $basearch
+    baseurl: https://mirrors.tuna.tsinghua.edu.cn/docker-ce/linux/centos/7/$basearch/edge
+    enabled: no
+    gpgcheck: no
+    file: docker-ce-tsinghua
+  tags: ADD Docker CE Tsinghua repos
+
+- name: ADD Docker CE Test repo
+  yum_repository:
+    name: Docker-CE-Test 
+    description: Docker CE Test - $basearch
+    baseurl: https://mirrors.tuna.tsinghua.edu.cn/docker-ce/linux/centos/7/$basearch/test
+    enabled: no
+    gpgcheck: no
+    file: docker-ce-tsinghua
+  tags: ADD Docker CE Tsinghua repos
+
+- name: ADD Docker CE Nightly repo
+  yum_repository:
+    name: Docker-CE-Nightly 
+    description: Docker CE Nightly - $basearch 
+    baseurl: https://mirrors.tuna.tsinghua.edu.cn/docker-ce/linux/centos/7/$basearch/nightly
+    enabled: no
+    gpgcheck: no
+    file: docker-ce-tsinghua
+  tags: ADD Docker CE Tsinghua repos
+
+- name: update yum repo cache 
+  shell: yum clean all && yum makecache fast
+  tags: update yum repo cache
+
+- name: install specified docker version
+  yum:
+    name: "{{ docker_version }}"
+    state: present
+  tags: install specified docker version 
+
+- name: start docker service , set it starts automatically
+  systemd:
+    name: docker
+    state: started
+    enabled: yes
+  tags: start docker service , set it starts automatically
+  
+- name: download docker-compose
+  shell: curl -L "https://github.com/docker/compose/releases/download/1.23.1/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+  tags: download docker-compose
+
+- name: add execution to docker-compose
+  file:
+    path: /usr/local/bin/docker-compose
+    state: file
+    mode: u+x,g+x,o+x
+  tags: add execution to docker-compose

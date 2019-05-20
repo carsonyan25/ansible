@@ -1,0 +1,70 @@
+#- name: remove salt-latest repository
+#  yum_repository:
+#    name: salt-latest
+#    state: absent
+#  notify: yum-clean-metadata
+#  tags: remove salt-latest repository
+
+- name: Add salt-latest repository
+  yum_repository:
+    name: salt-latest-ustc
+    description: salt YUM repo from  ustc.edu.cn
+    file: salt-latest-ustc
+    baseurl: http://mirrors.ustc.edu.cn/salt/yum/redhat/$releasever/$basearch/latest
+    gpgcheck: no
+    enabled: yes
+  tags: Add salt-latest repository
+
+- name: make repo cache
+  shell: yum clean expire-cache  && yum makecache fast
+  tags: make repo cache
+
+- name: install yum-utils
+  yum: 
+    name: yum-utils
+    state: present
+  tags: install yum-utils
+
+- name: install salt-minion
+  yum: 
+    name: salt-minion
+    state: present
+  tags: install salt-minion
+
+- name: modify configuration
+  script: modify-configuration.sh
+  tags: modify configuration
+
+- name: set salt-minion autostart for centos 6
+  service:
+    name: salt-minion
+    enabled: yes
+  when: (ansible_distribution == "CentOS" and ansible_distribution_major_version == "6")
+  tags: set salt-minion autostart for centos 6
+  
+- name: start salt-minion for centos 6
+  service:
+    name: salt-minion
+    state: started
+  when: (ansible_distribution == "CentOS" and ansible_distribution_major_version == "6")
+  tags: start salt-minion for centos 6
+  
+- name: set salt-minion autostart for centos 7
+  systemd:
+    name: salt-minion
+    enabled: yes
+  when: (ansible_distribution == "CentOS" and ansible_distribution_major_version == "7")
+  tags: set salt-minion autostart for centos 7
+  
+- name: start salt-minion for centos 7
+  systemd:
+    name: salt-minion
+    state: started
+  when: (ansible_distribution == "CentOS" and ansible_distribution_major_version == "7")
+  tags: start salt-minion for centos 7
+  
+- name: check salt-minion
+  shell: ps -ef | grep salt-minion
+  tags: check salt-minion
+
+   

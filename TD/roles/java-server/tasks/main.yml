@@ -1,0 +1,18 @@
+- name: install jdk 1.8
+  yum:
+    name: http://pkg.tuandai888.com/packages/jdk-8u60-linux-x64.rpm
+    state: present
+  tags: install jdk 1.8
+
+- name: copy environment script to VM
+  copy: 
+    src: "{{ env_script }}"
+    dest: /etc/profile.d/
+    force: yes
+    mode: u+x,g+x,o+x
+  tags: build jdk 1.8 enviroment
+     
+
+
+
+   

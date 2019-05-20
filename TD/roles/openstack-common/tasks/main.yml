@@ -1,0 +1,122 @@
+- name: install wget 
+  yum:
+    name: wget
+    state: present
+  tags: install wget
+   
+- name: create app  directory
+  file:
+    path: "{{ app_dir }}"
+    state: directory
+    mode: 0755
+  become: true
+  tags: install openfalcon-agent
+
+- name: download and uncompress package
+  shell:  wget -q -O - http://pkg.tuandai888.com/packages/open-falcon-v0.2.0-openstack.tar.gz  |  tar -zx -C  "{{ app_dir  }}"
+  become: true
+  tags: install openfalcon-agent
+
+- name: set config
+  shell: cd "{{ app_dir  }}" && sh ./config_set.sh
+  become: true
+  tags: install openfalcon-agent
+
+- name: create openfalcon-agent service for centos 7
+  shell: mv -f /data/openfalcon/openfalcon-agent.service /etc/systemd/system/
+  when: (ansible_distribution == "CentOS" and ansible_distribution_major_version == "7")
+  tags: install openfalcon-agent
+
+- name: add execute privilege  to start-agent.sh
+  file:
+    path: /data/openfalcon/start-agent.sh
+    state: file
+    mode: u+x,g+x,o+x
+  tags: install openfalcon-agent
+
+- name: enable openfalcon-agent service for centos 7
+  systemd:
+    name: openfalcon-agent
+    state: started
+    enabled: yes
+  when: (ansible_distribution == "CentOS" and ansible_distribution_major_version == "7")
+  tags: install openfalcon-agent
+
+- name: wait until the string "listening" in /data/openfalcon/agent/logs/agent.log before continuing
+  wait_for:
+    path: /data/openfalcon/agent/logs/agent.log
+    search_regex: listening
+  tags: ["install openfalcon-agent","wait until openfalcon-agent is ready"]
+
+- name: check openfalcon-agent service
+  uri:
+    url: http://127.0.0.1:1988/health
+    method: GET
+    status_code: 200
+  tags: ["install openfalcon-agent","check openfalcon-agent service"]
+
+- name: standard linux
+  script: openstack_init.sh all
+  tags: standard system
+
+- name: install vim 
+  yum:
+    name: vim
+    state: present
+  tags: install extra packages
+   
+- name: install nfs-utils 
+  yum:
+    name: nfs-utils
+    state: present
+  tags: install extra packages
+   
+- name: install rsync 
+  yum:
+    name: rsync
+    state: present
+  tags: install extra packages
+   
+- name: install net-tools 
+  yum:
+    name: net-tools
+    state: present
+  tags: install extra packages
+   
+- name: install sysstat 
+  yum:
+    name: sysstat
+    state: present
+  tags: install extra packages
+   
+- name: install tree 
+  yum:
+    name: tree
+    state: present
+  tags: install extra packages
+
+- name: copy user defined environment variables file to VM
+  copy:
+    src: user_defined_variables.sh
+    dest: /etc/profile.d/user_defined_variables.sh
+    force: yes
+    mode: 0644
+  tags:  copy user defined environment variables file to VM
+
+- name: export user defined environment variables
+  shell: source /etc/profile.d/user_defined_variables.sh
+  tags: export user defined environment variables
+   
+- name: enable sshd security
+  script: set_sshd_security.sh security "{{ sshd_port }}"
+  tags: standard system
+
+- name: restart sshd service
+  systemd:
+    name: sshd
+    state: restarted
+  tags: standard system
+
+- name: add new host info to ansible inventory file
+  script: add_new_host_to_ansible.py  "{{ sshd_port }}" 
+  tags: add new host info

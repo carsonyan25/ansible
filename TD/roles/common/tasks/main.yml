@@ -1,0 +1,191 @@
+- name: install wget
+  yum:
+    name: wget
+    state: present
+  async: 30
+  poll: 3
+  tags: install openfalcon-agent
+  
+
+- name: create app  directory
+  file:
+    path: "{{ app_dir }}"
+    state: directory
+    mode: 0755
+  become: true
+  tags: install openfalcon-agent
+
+- name: download and uncompress package
+  shell:  wget -q -O - http://pkg.tuandai888.com/packages/open-falcon-v0.2.0.tar.gz  |  tar -zx  -C  "{{ app_dir  }}"
+  become: true
+  tags: install openfalcon-agent
+
+- name: set config
+  shell: cd "{{ app_dir  }}" && sh ./config_set.sh
+  become: true
+  tags: install openfalcon-agent
+
+- name: create openfalcon-agent for centos 7
+  shell: mv -f /data/openfalcon/openfalcon-agent.service /etc/systemd/system/
+  when: (ansible_distribution == "CentOS" and ansible_distribution_major_version == "7")
+  tags: install openfalcon-agent
+
+- name: create openfalcon-agent for centos 6
+  shell: mv -f /data/openfalcon/openfalcon-agent /etc/init.d/
+  when: (ansible_distribution == "CentOS" and ansible_distribution_major_version == "6")
+  tags: install openfalcon-agent
+
+- name: add execute privilege to openfalcon-agent for centos 6
+  file:
+    path: /etc/init.d/openfalcon-agent
+    state: file
+    mode: u+x,g+x,o+x
+  when: (ansible_distribution == "CentOS" and ansible_distribution_major_version == "6")
+  tags: install openfalcon-agent
+
+- name: add execute privilege  to start-agent.sh
+  file:
+    path: /data/openfalcon/start-agent.sh
+    state: file
+    mode: u+x,g+x,o+x
+  tags: install openfalcon-agent
+
+- name: enable service for centos 7
+  systemd:
+    name: openfalcon-agent
+    state: started
+    enabled: yes
+  when: (ansible_distribution == "CentOS" and ansible_distribution_major_version == "7")
+  tags: install openfalcon-agent
+
+- name: enable service for centos 6
+  service:
+    name: openfalcon-agent
+    state: started
+    enabled: yes
+  when: (ansible_distribution == "CentOS" and ansible_distribution_major_version == "6")
+  tags: install openfalcon-agent
+
+- name: start service for centos 6
+  service:
+    name: openfalcon-agent
+    state: started
+  when: (ansible_distribution == "CentOS" and ansible_distribution_major_version == "6")
+  tags: install openfalcon-agent
+
+- name: open tcp 1988 port for centos 6
+  iptables:
+    chain: INPUT
+    action: insert
+    source: 10.0.0.0/8
+    protocol: tcp
+    destination_port: 1988
+    jump: ACCEPT
+    comment: openfalcon-agent port
+  become: yes
+  when: (ansible_distribution == "CentOS" and ansible_distribution_major_version == "6")
+  tags: open openfalcon-agent port 
+
+- name: enable 1988 port for centos 7
+  shell: firewall-cmd  --add-port=1988/tcp --permanent
+  when: (ansible_distribution == "CentOS" and ansible_distribution_major_version == "7")
+  tags: open openfalcon-agent port
+
+- name: reload firewall for centos 7
+  shell: firewall-cmd  --reload
+  when: (ansible_distribution == "CentOS" and ansible_distribution_major_version == "7")
+  tags: open openfalcon-agent port
+
+- name: check service
+  uri:
+    url: http://127.0.0.1:1988
+    method: GET
+    status_code: 200
+  tags: install openfalcon-agent
+
+- name: standard linux
+  script: standard_linux.sh all
+  tags: standard system
+
+- name: install vim 
+  yum:
+    name: vim
+    state: present
+  tags: standard system
+   
+- name: install nfs-utils 
+  yum:
+    name: nfs-utils
+    state: present
+  tags: standard system
+   
+- name: install rsync 
+  yum:
+    name: rsync
+    state: present
+  tags: standard system
+   
+- name: install net-tools 
+  yum:
+    name: net-tools
+    state: present
+  tags: standard system
+   
+- name: install sysstat 
+  yum:
+    name: sysstat
+    state: present
+  tags: standard system
+   
+- name: install tree 
+  yum:
+    name: tree
+    state: present
+  tags: standard system
+   
+- name: enable sshd pubkey verify
+  script: enable_ssh_pubkey_auth.sh  pubkey 22
+  tags: standard system
+
+- name: mount key-file share on nfs server
+  mount:
+    fstype: nfs
+    name: /key-files
+    opts: "proto=tcp,nfsvers=4"
+    src: 10.100.11.157:/nfs-data/samba/server-key-files
+    state: mounted
+  tags: upload private key to nfs server
+
+- name: pause for ensure mount
+  shell: sleep 5
+  tags: upload private key to nfs server
+
+- name: copy root's private key to share
+  shell: cp -af  /root/.ssh/id_rsa   /key-files/`hostname`-root.pri 
+  tags: upload private key to nfs server
+  
+- name: copy test's private key to share
+  shell: cp -af  /home/test/.ssh/id_rsa   /key-files/`hostname`-test.pri 
+  tags: upload private key to nfs server
+
+- name: change mode for key-files
+  file:
+    recurse: yes 
+    path: /key-files
+    state: directory
+    mode: u+r,g+r,o+r
+  tags: upload private key to nfs server
+
+- name: umount key-file share on nfs server
+  mount:
+    fstype: nfs
+    name: /key-files
+    opts: "proto=tcp,nfsvers=4"
+    src: 10.100.11.157:/nfs-data/samba/server-key-files
+    state: absent
+  tags: upload private key to nfs server
+
+- name: reboot VM
+  shell: shutdown --reboot +1  --no-wall
+  tags: reboot VM
+

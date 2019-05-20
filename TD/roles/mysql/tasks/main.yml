@@ -1,0 +1,166 @@
+- name: create data  directory
+  file:
+    path: /data
+    state: directory
+    mode: 0755
+  become: true
+  tags: prepare deploy
+
+- name: download and uncompress mysql package
+  shell: wget -q -O - "{{ mysql_package }}" | tar -zx  -C  /data/ 
+  tags: download and uncompress mysql package
+
+- name: install libaio
+  yum:
+    name: libaio 
+    state: present
+  tags: deploy mysql
+
+- name: create mysql group
+  group:
+    name: mysql
+    state: present
+    system: yes
+  tags: deploy mysql
+
+- name: create mysql user
+  user:
+    name: mysql
+    comment: "mysql user"
+    group: mysql
+    system: yes
+    shell: /bin/false
+  tags: deploy mysql
+
+- name: create mysql directory
+  file:
+    src: "{{ mysql_src_dir }}"
+    dest: "{{ mysql_dir }}"
+    state: link
+    owner: mysql
+    group: mysql
+    mode: 0755
+  become: true
+  tags: deploy mysql
+
+- name: create mysql-files and logs directory
+  file:
+    path: /data/mysql/mysql-files
+    state: directory
+    owner: mysql
+    group: mysql
+    mode: 0755 
+  become: true
+  tags: deploy mysql
+
+- name: create logs directory
+  file:
+    path: /data/mysql/logs
+    state: directory
+    owner: mysql
+    group: mysql
+    mode: 0755 
+  become: true
+  tags: deploy mysql
+
+- name: change owner and group for mysql source directory
+  file:
+    path: "{{ mysql_src_dir }}"
+    state: directory
+    mode: 0755 
+    owner: mysql
+    group: mysql
+    recurse: yes
+  become: true
+  tags: deploy mysql
+
+- name: create database directory
+  file:
+    path: "{{ database_dir }}"
+    state: directory
+    mode: 0755 
+    owner: mysql
+    group: mysql
+    recurse: yes
+  become: true
+  tags: deploy mysql
+
+- name: create binlog index file
+  file:
+    path: /data/mysql/logs/binlog.index
+    state: touch
+    mode: 0664 
+    owner: mysql
+    group: mysql
+  become: true
+  tags: deploy mysql
+
+- name: fetch my.cnf setting file
+  copy:
+    src: "{{ server }}"
+    dest: /etc/my.cnf
+    mode: 0644
+    force: yes
+  tags: fetch my.cnf setting file
+    
+- name: initialize database
+  shell: cd "{{ mysql_dir }}" &&  bin/mysqld --initialize-insecure  --user=mysql 
+  tags: initialize database
+
+- name: generate ssl-rsa files
+  shell: cd "{{ mysql_dir }}" &&  bin/mysql_ssl_rsa_setup --uid=mysql 
+  tags: generate ssl-rsa files
+
+- name: copy mysql service file
+  shell: cd "{{ mysql_dir }}" && cp -f support-files/mysql.server /etc/init.d/mysqld 
+  tags: copy mysql service file
+
+- name: create mysql service
+  shell: chkconfig  --add mysqld && chkconfig mysqld on
+  tags: create mysql service
+ 
+- name: start mysql service
+  service:
+    name: mysqld
+    state: started
+  tags: start mysql service
+
+- name: create root password
+  shell: cd "{{ mysql_dir }}" && bin/mysql  -u root --skip-password -e " ALTER USER root@localhost IDENTIFIED BY 'TDmysql+123'; flush privileges; "
+  tags: create root password
+
+- name: install expect command
+  yum:
+    name: expect
+    state: present
+  tags: install expect command
+
+- name: improve mysql security   
+  script: secure_mysql.sh
+  tags: improve mysql security
+
+- name: create test user
+  shell: cd "{{ mysql_dir }}" && bin/mysql  -uroot -pTDmysql+123 -e " CREATE USER test@'%' IDENTIFIED BY 'JHAk+FABP4wUydBq3' ; grant all on *.* to test@'%' with grant option; "
+  tags: create test user
+
+- name: create dev user
+  shell: cd "{{ mysql_dir }}" && bin/mysql  -uroot -pTDmysql+123 -e " CREATE USER dev@'%' IDENTIFIED BY '6+PcRYJrGaEITjrM'; grant all on *.* to dev@'%' with grant option; "
+  tags: create dev user
+
+- name: create repl user
+  shell: cd "{{ mysql_dir }}" && bin/mysql  -uroot -pTDmysql+123 -e " CREATE USER repl@'%' IDENTIFIED BY 'Go+GwK1nnjI1AbHsG'; grant REPLICATION SLAVE, REPLICATION CLIENT ON *.* to repl@'%'; "
+  tags: create repl user
+
+- name: reload privileges
+  shell: cd "{{ mysql_dir }}" && bin/mysql  -uroot -pTDmysql+123 -e "flush privileges;"
+  tags: reload privileges
+
+- name: output mysql command to enviroment
+  copy:
+    src: mysql.sh
+    dest: /etc/profile.d/mysql.sh
+    mode: 0755
+  tags: output mysql command to enviroment
+
+
+

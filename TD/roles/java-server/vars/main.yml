@@ -1,0 +1,4 @@
+pkg_dir: /data/package
+jdk_pkg: jdk-8u60-linux-x64.rpm
+env_script: java.sh
+

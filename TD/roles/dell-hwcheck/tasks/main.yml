@@ -1,0 +1,47 @@
+# this playbook use to deploy hardware check on dell server
+# all the data will be push to openfalcon-agent 
+#
+
+- name: install dell official repo
+  shell: wget -q -O - http://linux.dell.com/repo/hardware/latest/bootstrap.cgi | bash
+  tags: ["install dell official repo","deploy dell-hwcheck"]
+
+- name: install dell sravadmin packages
+  shell: yum -y install srvadmin-omacore srvadmin-omcommon srvadmin-storage-cli smbios-utils-bin lm_sensors dmidecode cronie
+  async: 90
+  poll: 6
+  tags: ["install dell sravadmin packages","deploy dell-hwcheck"]
+
+- name: enable sravadmin service
+  shell: /opt/dell/srvadmin/sbin/srvadmin-services.sh enable
+  tags: ["enable sravadmin service","deploy dell-hwcheck"]
+
+- name: restart sravadmin service
+  shell: /opt/dell/srvadmin/sbin/srvadmin-services.sh restart
+  tags: ["restart sravadmin service","deploy dell-hwcheck"]
+
+- name: enable lm-sensors detection
+  shell: /usr/sbin/sensors-detect --auto
+  tags: ["enable lm-sensors detection","deploy dell-hwcheck"]
+
+- name: install hwcheck package
+  yum: 
+    name: http://pkg.tuandai888.com/packages/hwcheck/hwcheck-0.2-2.el7.centos.x86_64.rpm
+    state: present
+  tags: ["install hwcheck package","deploy dell-hwcheck"]
+ 
+- name: install hwcheck debug package
+  yum: 
+    name: http://pkg.tuandai888.com/packages/hwcheck/hwcheck-debuginfo-0.2-2.el7.centos.x86_64.rpm
+    state: present
+  tags: ["install hwcheck debug package","deploy dell-hwcheck"]
+
+- name: change path in /etc/crontab
+  script: change_path_in_crontab.sh
+  tags: ["change path in /etc/crontab","deploy dell-hwcheck"]
+
+- name: add check hardware task in /etc/crontab
+  shell: echo "10 * * * * root /usr/bin/hwcheck -s 3600 -p >/dev/null 2>&1 &" >> /etc/crontab
+  tags: ["add check hardware task in /etc/crontab","deploy dell-hwcheck"]
+  
+

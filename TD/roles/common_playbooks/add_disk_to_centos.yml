@@ -1,0 +1,33 @@
+---
+
+- hosts: all
+  tasks:
+
+  - name: install lvm2
+    yum:
+      name: lvm2
+      state: present
+    tags: ["add_disk_to_centos","install lvm2"]
+
+  - name: create new pv
+    shell: pvcreate  /dev/vdb
+    tags: ["create new pv","add_disk_to_centos"]
+
+  - name: extend existing vg centos
+    shell: vgextend centos  /dev/vdb
+    tags: ["extend existing vg centos","add_disk_to_centos"]
+
+  - name: extend existing lv data
+    shell: lvextend  --extents 100%FREE  /dev/centos/data
+    tags: ["extend existing lv data","add_disk_to_centos"]
+
+  - name: extend xfs file-system
+    shell: xfs_growfs  /dev/centos/data
+    tags: ["extend xfs file-system","add_disk_to_centos"]
+
+  - name: show file-system info
+    shell: df -Th 
+    tags: ["show file-system info","add_disk_to_centos"]
+
+
+
